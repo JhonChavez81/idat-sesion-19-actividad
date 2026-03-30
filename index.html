@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Challenge: REM & Bootstrap</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Fira+Code:wght@500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --brand-yellow: #FFC820;
+            --brand-dark: #111827;
+            --brand-bootstrap: #5b21b6;
+            --brand-accent: #0284c7;
+            --text-muted: #374151;
+            --success: #059669;
+            --error: #dc2626;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--brand-yellow);
+            color: var(--brand-dark);
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* ==========================================================================
+           HEADER & PROGRESS
+           ========================================================================== */
+        header {
+            background: var(--brand-dark);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .score-box {
+            background: var(--brand-yellow);
+            color: var(--brand-dark);
+            padding: 5px 15px;
+            border-radius: 50px;
+            font-weight: 800;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .progress-track {
+            flex-grow: 1;
+            margin: 0 40px;
+            background: #374151;
+            height: 10px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #progress-bar {
+            background: var(--brand-yellow);
+            width: 0%;
+            height: 100%;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ==========================================================================
+           SLIDES (FULL SCREEN)
+           ========================================================================== */
+        #deck {
+            position: relative;
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+        }
+
+        .slide {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            padding: 40px 10%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .slide.active { display: flex; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h2 { font-size: 3.5rem; font-weight: 800; margin-bottom: 25px; letter-spacing: -0.04em; line-height: 1; }
+        p { font-size: 1.6rem; line-height: 1.5; margin-bottom: 40px; font-weight: 500; max-width: 1000px; }
+
+        /* ==========================================================================
+           INTERACTIVE ELEMENTS
+           ========================================================================== */
+        .options { display: grid; grid-template-columns: 1fr 1fr; gap: 25px; max-width: 1100px; }
+        
+        .opt-btn {
+            background: rgba(255, 255, 255, 0.5);
+            border: 3px solid var(--brand-dark);
+            padding: 25px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1.3rem;
+            font-weight: 700;
+            text-align: left;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .opt-btn:hover { background: rgba(255, 255, 255, 0.9); transform: scale(1.02); }
+        .opt-btn.correct { background: var(--success); color: white; border-color: var(--success); }
+        .opt-btn.wrong { background: var(--error); color: white; border-color: var(--error); }
+        .locked { pointer-events: none; }
+
+        /* REM SIMULATOR */
+        .sim-container {
+            background: var(--brand-dark);
+            color: white;
+            padding: 40px;
+            border-radius: 24px;
+            margin-bottom: 40px;
+            max-width: 700px;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.2);
+        }
+
+        .sim-ui { margin-bottom: 20px; font-family: 'Fira Code', monospace; font-size: 1.1rem; }
+        
+        #rem-display-box {
+            background: white;
+            color: var(--brand-dark);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        /* GRID PREVIEW */
+        .grid-visual {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            gap: 12px;
+            margin-bottom: 40px;
+            max-width: 1100px;
+        }
+        .g-item { background: rgba(0,0,0,0.1); height: 60px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-family: 'Fira Code'; font-size: 1.1rem; }
+        .g-item.filled { background: var(--brand-bootstrap); color: white; box-shadow: 0 4px 12px rgba(91, 33, 182, 0.3); }
+
+        /* TOAST FEEDBACK */
+        #feedback-toast {
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 15px 40px;
+            border-radius: 50px;
+            color: white;
+            font-weight: 800;
+            font-size: 1.2rem;
+            display: none;
+            z-index: 1000;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: var(--brand-yellow); height: 10px; }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div style="font-weight: 800; font-size: 1.2rem;"><i class="fa-solid fa-bolt"></i> CSS & BOOTSTRAP CHALLENGE</div>
+        <div class="progress-track"><div id="progress-bar"></div></div>
+        <div class="score-box">XP: <span id="pts">0</span></div>
+    </header>
+
+    <div id="deck">
+        <!-- INICIO -->
+        <div class="slide active" id="s0" style="text-align: center; align-items: center;">
+            <i class="fa-solid fa-rocket" style="font-size: 6rem; margin-bottom: 30px; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.1));"></i>
+            <h2>Misión: Master en CSS 2026</h2>
+            <p>Resuelve los 10 desafíos técnicos para demostrar tu nivel. <br>Cada respuesta correcta te llevará automáticamente al siguiente nivel.</p>
+            <button class="opt-btn" onclick="next()" style="justify-content: center; width: 350px; font-size: 1.5rem; background: var(--brand-dark); color: white;">COMENZAR MISIÓN</button>
+        </div>
+
+        <!-- REM 1 -->
+        <div class="slide" id="s1">
+            <h2><i class="fa-solid fa-calculator" style="color: var(--brand-accent)"></i> Reto 1: El Ladrillo REM</h2>
+            <p>Si la base del navegador es <strong>16px</strong>, ¿cuánto mide un elemento de <strong>2.5rem</strong>?</p>
+            <div class="options">
+                <button class="opt-btn" onclick="check(this, false)">32px</button>
+                <button class="opt-btn" onclick="check(this, true)">40px</button>
+                <button class="opt-btn" onclick="check(this, false)">48px</button>
+                <button class="opt-btn" onclick="check(this, false)">25px</button>
+            </div>
+        </div>
+
+        <!-- REM 2 -->
+        <div class="slide" id="s2">
+            <h2><i class="fa-solid fa-expand" style="color: var(--brand-accent)"></i> Reto 2: Escalabilidad Real</h2>
+            <p>Mueve el slider para cambiar la raíz del documento. ¿Qué sucede con el texto definido en <strong>2rem</strong>?</p>
+            <div class="sim-container">
+                <div class="sim-ui">Raíz (html): <span id="root-val" style="color: var(--brand-yellow)">16px</span></div>
+                <input type="range" min="10" max="40" value="16" oninput="runSim(this.value)">
+                <div id="rem-display-box" style="margin-top: 25px;">
+                    <div id="sample-text" style="font-size: 2em; font-weight: 800;">Texto 2rem</div>
+                    <div id="px-calc" style="font-size: 1rem; margin-top: 15px; color: #555; font-family: 'Fira Code';">Valor actual: 32px</div>
+                </div>
+            </div>
+            <div class="options">
+                <button class="opt-btn" onclick="check(this, true)">Escala proporcionalmente a la raíz</button>
+                <button class="opt-btn" onclick="check(this, false)">Se mantiene bloqueado en 32px</button>
+            </div>
+        </div>
+
+        <!-- REM 3 -->
+        <div class="slide" id="s3">
+            <h2><i class="fa-solid fa-universal-access" style="color: var(--brand-accent)"></i> Reto 3: Accesibilidad</h2>
+            <p>¿Por qué Bootstrap prefiere <strong>rem</strong> para sus fuentes en lugar de <strong>px</strong>?</p>
+            <div class="options">
+                <button class="opt-btn" onclick="check(this, true)">Permite al usuario aumentar la fuente desde su sistema</button>
+                <button class="opt-btn" onclick="check(this, false)">Ayuda a que las imágenes carguen más rápido</button>
+            </div>
+        </div>
+
+        <!-- REM 4 -->
+        <div class="slide" id="s4">
+            <h2><i class="fa-solid fa-drafting-compass" style="color: var(--brand-accent)"></i> Reto 4: Diseño a Código</h2>
+            <p>Un diseño indica un margen de <strong>32px</strong>. ¿Qué valor <strong>rem</strong> deberías usar?</p>
+            <div class="options">
+                <button class="opt-btn" onclick="check(this, false)">1.5rem</button>
+                <button class="opt-btn" onclick="check(this, true)">2rem</button>
+                <button class="opt-btn" onclick="check(this, false)">3.2rem</button>
+                <button class="opt-btn" onclick="check(this, false)">0.5rem</button>
+            </div>
+        </div>
+
+        <!-- BS 5 -->
+        <div class="slide" id="s5">
+            <h2><i class="fa-solid fa-grip" style="color: var(--brand-bootstrap)"></i> Reto 5: La Regla de 12</h2>
+            <p>¿En cuántas columnas divide Bootstrap el ancho total de una fila (<code>.row</code>)?</p>
+            <div class="grid-visual" id="gv12"></div>
+            <div class="options">
+                <button class="opt-btn" onclick="check(this, false)">10 columnas</button>
+                <button class="opt-btn" onclick="check(this, true)">12 columnas</button>
+                <button class="opt-btn" onclick="check(this, false)">16 columnas</button>
+                <button class="opt-btn" onclick="check(this, false)">8 columnas</button>
+            </div>
+        </div>
+
+        <!-- BS 6 -->
+        <div class="slide" id="s6">
+            <h2><i class="fa-solid fa-puzzle-piece" style="color: var(--brand-bootstrap)"></i> Reto 6: Puzzle de Columnas</h2>
+            <p>Si tu Sidebar es <code>col-4</code>, ¿qué clase debe tener el contenido principal para ocupar el resto?</p>
+            <div class="grid-visual">
+                <div class="g-item filled" style="grid-column: span 4">Sidebar (4)</div>
+                <div class="g-item" style="grid-column: span 8">Contenido (8)</div>
+            </div>
+            <div class="options">
+                <button class="opt-btn" onclick="check(this, false)">col-6</button>
+                <button class="opt-btn" onclick="check(this, true)">col-8</button>
+                <button class="opt-btn" onclick="check(this, false)">col-4</button>
+            </div>
+        </div>
+
+        <!-- BS 7 -->
+        <div class="slide" id="s7">
+            <h2><i class="fa-solid fa-mobile-screen" style="color: var(--brand-bootstrap)"></i> Reto 7: Por Defecto</h2>
+            <p>En Bootstrap, ¿qué ancho ocupa una columna en móviles si no le asignas un número?</p>
+            <div class="options">
+                <button class="opt-btn" onclick="check(this, true)">Ocupa el 100% (col-12)</button>
+                <button class="opt-btn" onclick="check(this, false)">Ocupa 1/12 parte (col-1)</button>
+                <button class="opt-btn" onclick="check(this, false)">Se vuelve invisible</button>
+            </div>
+        </div>
+
+        <!-- BS 8 -->
+        <div class="slide" id="s8">
+            <h2><i class="fa-solid fa-laptop-code" style="color: var(--brand-bootstrap)"></i> Reto 8: Breakpoints</h2>
+            <p>¿Qué infijo utilizas para aplicar estilos a partir de una <strong>Tablet (>=768px)</strong>?</p>
+            <div class="options">
+                <button class="opt-btn" onclick="check(this, false)">sm</button>
+                <button class="opt-btn" onclick="check(this, true)">md</button>
+                <button class="opt-btn" onclick="check(this, false)">lg</button>
+                <button class="opt-btn" onclick="check(this, false)">xl</button>
+            </div>
+        </div>
+
+        <!-- BS 9 -->
+        <div class="slide" id="s9">
+            <h2><i class="fa-solid fa-sitemap" style="color: var(--brand-bootstrap)"></i> Reto 9: La Jerarquía</h2>
+            <p>¿Cuál es la estructura de etiquetas obligatoria para que el Grid no se rompa?</p>
+            <div class="options">
+                <button class="opt-btn" onclick="check(this, false)">row > container > col</button>
+                <button class="opt-btn" onclick="check(this, true)">container > row > col</button>
+                <button class="opt-btn" onclick="check(this, false)">col > row > container</button>
+            </div>
+        </div>
+
+        <!-- BS 10 -->
+        <div class="slide" id="s10">
+            <h2><i class="fa-solid fa-bolt" style="color: var(--brand-bootstrap)"></i> Reto 10: Comportamiento</h2>
+            <p>¿Cómo activas un componente interactivo de Bootstrap (como un Modal) usando solo HTML?</p>
+            <div class="options">
+                <button class="opt-btn" onclick="check(this, false)">Con la clase class="modal-open"</button>
+                <button class="opt-btn" onclick="check(this, true)">Con el atributo data-bs-toggle="..."</button>
+                <button class="opt-btn" onclick="check(this, false)">Agregando un id="trigger"</button>
+            </div>
+        </div>
+
+        <!-- FINAL -->
+        <div class="slide" id="s11" style="text-align: center; align-items: center;">
+            <i class="fa-solid fa-trophy" style="font-size: 8rem; color: var(--brand-dark); margin-bottom: 30px;"></i>
+            <h2>¡Misión Completada!</h2>
+            <p>Has dominado las bases del diseño moderno con REM y Bootstrap.</p>
+            <div style="background: var(--brand-dark); color: white; padding: 20px 40px; border-radius: 20px; font-size: 2.5rem; font-weight: 800; margin-bottom: 40px;">
+                <span id="final-pts">0</span> XP
+            </div>
+            <button class="opt-btn" onclick="location.reload()" style="justify-content: center; width: 350px; background: white;">REINTENTAR DESAFÍO</button>
+        </div>
+    </div>
+
+    <div id="feedback-toast"></div>
+
+    <script>
+        let current = 0;
+        let points = 0;
+        const total = 11;
+        const answered = new Set();
+
+        function init() {
+            const gv = document.getElementById('gv12');
+            for(let i=1; i<=12; i++) {
+                const d = document.createElement('div');
+                d.className = 'g-item';
+                d.innerText = i;
+                gv.appendChild(d);
+            }
+            update();
+        }
+
+        function update() {
+            document.querySelectorAll('.slide').forEach((s, i) => {
+                s.classList.toggle('active', i === current);
+            });
+            
+            const progress = (current / (total - 1)) * 100;
+            document.getElementById('progress-bar').style.width = `${progress}%`;
+            
+            if(current === 11) document.getElementById('final-pts').innerText = points;
+        }
+
+        function next() { 
+            if(current < total) { 
+                current++; 
+                update(); 
+            } 
+        }
+
+        function check(btn, isCorrect) {
+            if(answered.has(current)) return;
+            
+            const toast = document.getElementById('feedback-toast');
+            toast.style.display = 'block';
+            
+            if(isCorrect) {
+                btn.classList.add('correct');
+                points += 100;
+                document.getElementById('pts').innerText = points;
+                toast.innerText = "¡EXCELENTE! +100 XP";
+                toast.style.background = "var(--success)";
+            } else {
+                btn.classList.add('wrong');
+                toast.innerText = "ERROR TÉCNICO";
+                toast.style.background = "var(--error)";
+            }
+
+            answered.add(current);
+            btn.parentElement.classList.add('locked');
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+                next();
+            }, 850);
+        }
+
+        function runSim(val) {
+            document.getElementById('root-val').innerText = val + "px";
+            const display = document.getElementById('rem-display-box');
+            display.style.fontSize = val + "px"; // Seteamos el font-size de la "raiz" local
+            
+            const pxValue = val * 2;
+            document.getElementById('px-calc').innerText = `Valor Real Resultante: ${pxValue}px`;
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
